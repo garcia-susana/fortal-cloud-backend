@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: fortal-cloud-api
+  datasource:
+    url: jdbc:postgresql://ep-sparkling-sea-aipmu04z-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+    username: neondb_owner
+    password: npg_FVACIJowZN50
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+wasabi:
+  access-key: CFJDNIRCK8VGQCG0GWN5
+  secret-key: Y5fPcS3aSI7vDSzTWr5Dh3a8OOGUXbYJhvE6eK4r
+  endpoint: https://s3.us-east-1.wasabisys.com
+  bucket: fortal-cloud-dev
+  region: us-east-1
+
+stripe:
+  secret-key: sk_test_51T6AWUAxqaN84SrkOadGQAFWKkL34JJy7385lvohNEdmb3sXDjJCpR9ziHaHfBneDx2ypIAPFP0ZlVOpCj3fEg4Q00Cfnvr2CK
+  price-id: price_1T6NTUAxqaN84SrkPMfIQUKq
+  success-url: http://localhost:3000/success
+  cancel-url: http://localhost:3000/cancel
+  webhook-secret: whsec_ceac495f57ca664a5d57ac048331749608a8dc00fa1372cd1b7c99ebe62dc631
+
+jwt:
+  secret: fortalcloud-secret-key-super-segura-2026
+  expiration: 86400000
+
+server:
+  port: 8080
