@@ -57,6 +57,8 @@ public class SecurityConfig {
                         .allowedOrigins(
                                 "http://localhost:3000",
                                 "http://localhost:3001",
+                                "https://app.fortal-cloud.com.br",
+                                "http://191.101.18.65",
                                 "https://fortal-cloud.com.br",      // domínio de produção
                                 "https://www.fortal-cloud.com.br"   // com www também
                         )
