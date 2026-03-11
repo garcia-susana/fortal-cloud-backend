@@ -57,12 +57,10 @@ public class SecurityConfig {
                         .allowedOrigins(
                                 "http://localhost:3000",
                                 "http://localhost:3001",
-                                "https://app.fortal-cloud.com.br",
-                                "http://191.101.18.65",
-                                "https://fortal-cloud.com.br",
+                                "http://191.101.18.65/",
+                                "https://fortal-cloud.com.br",      // domínio de produção
                                 "https://www.fortal-cloud.com.br",
-                                "https://6cc407b4-0343-48be-8a6e-d010262677f8.app-preview.com",
-                                "https://fortal-cloud.com.br"  // com www também
+                                "https://6cc407b4-0343-48be-8a6e-d010262677f8.app-preview.com"   // com www também
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
