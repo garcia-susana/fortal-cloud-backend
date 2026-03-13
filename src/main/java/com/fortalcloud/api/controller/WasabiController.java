@@ -2,10 +2,11 @@ package com.fortalcloud.api.controller;
 
 import com.fortalcloud.api.service.WasabiService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.URL;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/wasabi")
@@ -17,38 +18,35 @@ public class WasabiController {
         this.wasabiService = wasabiService;
     }
 
-    @GetMapping("/buckets")
-    public ResponseEntity<List<String>> listBuckets() {
-        return ResponseEntity.ok(wasabiService.listBuckets());
-    }
-
-    @GetMapping("/files/{userId}")
-    public ResponseEntity<List<String>> listFiles(@PathVariable String userId) {
+    @GetMapping("/files")
+    public ResponseEntity<List<String>> listFiles(Authentication authentication) {
+        String userId = authentication.getName();
         return ResponseEntity.ok(wasabiService.listFiles(userId));
     }
 
-    //traz a URL para download
-    @GetMapping("/upload-url/{userId}/{fileName}")
-    public ResponseEntity<String> getUploadUrl(
-            @PathVariable String userId,
-            @PathVariable String fileName) {
-        URL url = wasabiService.generatePresignedUrl(userId, fileName);
-        return ResponseEntity.ok(url.toString());
+    @GetMapping("/upload-url/{fileName}")
+    public ResponseEntity<Map<String, String>> getUploadUrl(
+            @PathVariable String fileName,
+            Authentication authentication) {
+        String userId = authentication.getName();
+        String url = wasabiService.generateUploadUrl(userId, fileName).toString();
+        return ResponseEntity.ok(Map.of("url", url));
     }
 
-    //gera a URL
-    @GetMapping("/download-url/{userId}/{fileName}")
-    public ResponseEntity<String> getDownloadUrl(
-            @PathVariable String userId,
-            @PathVariable String fileName) {
-        URL url = wasabiService.generatePresignedUrl(userId, fileName);
-        return ResponseEntity.ok(url.toString());
+    @GetMapping("/download-url/{fileName}")
+    public ResponseEntity<Map<String, String>> getDownloadUrl(
+            @PathVariable String fileName,
+            Authentication authentication) {
+        String userId = authentication.getName();
+        String url = wasabiService.generateDownloadUrl(userId, fileName).toString();
+        return ResponseEntity.ok(Map.of("url", url));
     }
 
-    @GetMapping("/files/{userId}/{fileName}")
+    @DeleteMapping("/files/{fileName}")
     public ResponseEntity<Void> deleteFile(
-            @PathVariable String userId,
-            @PathVariable String fileName) {
+            @PathVariable String fileName,
+            Authentication authentication) {
+        String userId = authentication.getName();
         wasabiService.deleteFile(userId, fileName);
         return ResponseEntity.noContent().build();
     }

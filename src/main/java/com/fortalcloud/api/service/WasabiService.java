@@ -9,6 +9,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.net.URI;
 import java.net.URL;
@@ -31,8 +32,6 @@ public class WasabiService {
 
     @Value("${wasabi.endpoint}")
     private String endpoint;
-
-
 
     public WasabiService(S3Client s3Client) {
         this.s3Client = s3Client;
@@ -59,7 +58,18 @@ public class WasabiService {
                 .toList();
     }
 
-    public URL generatePresignedUrl(String userId, String fileName) {
+    public URL generateUploadUrl(String userId, String fileName) {
+        S3Presigner presigner = buildPresigner();
+        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(15))
+                .putObjectRequest(r -> r
+                        .bucket(bucket)
+                        .key(userId + "/" + fileName))
+                .build();
+        return presigner.presignPutObject(presignRequest).url();
+    }
+
+    public URL generateDownloadUrl(String userId, String fileName) {
         S3Presigner presigner = buildPresigner();
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
                 .signatureDuration(Duration.ofMinutes(15))
@@ -75,6 +85,7 @@ public class WasabiService {
                 .bucket(bucket)
                 .key(userId + "/" + fileName));
     }
+
     private S3Presigner buildPresigner() {
         return S3Presigner.builder()
                 .endpointOverride(URI.create(endpoint))
