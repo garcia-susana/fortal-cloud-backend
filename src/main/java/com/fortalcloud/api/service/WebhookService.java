@@ -24,10 +24,14 @@ public class WebhookService {
             JsonNode data = root.path("data").path("object");
             if ("checkout.session.completed".equals(event.getType())) {
                 String email = data.path("customer_email").asText(null);
+                String customerId = data.path("customer").asText(null);
                 System.out.println("📧 Email do webhook: " + email);
                 if (email != null) {
                     userRepository.findByEmail(email).ifPresent(user -> {
                         user.setSubscriptionStatus("ACTIVE");
+                        if(customerId != null){
+                            user.setStripeCustomerId(customerId);
+                        }
                         userRepository.save(user);
                         System.out.println("✅ Assinatura ativada para: " + email);
                     });
@@ -35,10 +39,7 @@ public class WebhookService {
             } else if ("customer.subscription.deleted".equals(event.getType())) {
                 String customerId = data.path("customer").asText(null);
                 if (customerId != null) {
-                    userRepository.findAll().stream()
-                            .filter(u -> customerId.equals(u.getStripeCustomerId()))
-                            .findFirst()
-                            .ifPresent(user -> {
+                    userRepository.findByStripeCustomerId(customerId).ifPresent(user -> {
                                 user.setSubscriptionStatus("INACTIVE");
                                 userRepository.save(user);
                                 System.out.println("❌ Assinatura cancelada para: " + user.getEmail());
