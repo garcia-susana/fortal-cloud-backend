@@ -17,6 +17,8 @@ import java.net.URI;
 import java.net.URL;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+
 
 @Service
 public class WasabiService {
@@ -132,5 +134,40 @@ public class WasabiService {
                         AwsBasicCredentials.create(accessKey, secretKey)))
                 .region(Region.US_EAST_1)
                 .build();
+    }
+
+    public Map<String, Object> getStorageQuota(String userId){
+        try{
+            ListObjectsV2Request request = ListObjectsV2Request.builder()
+                    .bucket(bucket)
+                    .prefix(userId + "/")
+                    .build();
+
+            long usedBytes = s3Client.listObjectsV2(request)
+                    .contents()
+                    .stream()
+                    .mapToLong(S3Object::size)
+                    .sum();
+
+            long totalBytes = 1_099_511_627_776L; // 1 TB
+            double percentUsed = (double) usedBytes / totalBytes * 100;
+
+            return Map.of(
+                    "usedBytes", usedBytes,
+                    "usedFormatted", formatBytes(usedBytes),
+                    "totalBytes", totalBytes,
+                    "totalFormatted", "1 TB",
+                    "percentUsed", Math.round(percentUsed * 10000.0) / 10000.0
+            );
+        } catch (S3Exception ex) {
+            throw new BusinessException("Erro ao calcular quota de armazenamento.");
+        }
+    }
+
+    private String formatBytes(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return String.format("%.1f KB", bytes / 1024.0);
+        if (bytes < 1024 * 1024 * 1024) return String.format("%.1f MB", bytes / (1024.0 * 1024));
+        return String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024));
     }
 }

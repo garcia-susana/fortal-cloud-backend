@@ -50,4 +50,10 @@ public class WasabiController {
         wasabiService.deleteFile(userId, fileName);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/quota")
+    public ResponseEntity<Map<String, Object>> getQuota(Authentication authentication) {
+        String userId = authentication.getName();
+        return ResponseEntity.ok(wasabiService.getStorageQuota(userId));
+    }
 }
