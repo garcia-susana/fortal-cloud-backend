@@ -41,4 +41,11 @@ public class StripeController {
             throw new BusinessException("Assinatura Webhook inválido");
         }
     }
+
+    @PostMapping("/cancel")
+    public ResponseEntity<?> cancelSubscription(Authentication authentication){
+        String email = authentication.getName();
+        stripeService.cancelSubscription(email);
+        return ResponseEntity.ok(Map.of("message", "Assinatura cancelada com sucesso."));
+    }
 }
