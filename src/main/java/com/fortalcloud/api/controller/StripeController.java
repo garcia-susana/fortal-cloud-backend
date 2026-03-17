@@ -1,5 +1,6 @@
 package com.fortalcloud.api.controller;
 
+import com.fortalcloud.api.exception.BusinessException;
 import com.fortalcloud.api.service.StripeService;
 import com.fortalcloud.api.service.WebhookService;
 import com.stripe.exception.SignatureVerificationException;
@@ -24,13 +25,9 @@ public class StripeController {
 
     @PostMapping("/checkout")
     public ResponseEntity<?> createCheckout(Authentication authentication) {
-        try {
             String email = authentication.getName();
             String url = stripeService.createCheckoutSession(email);
             return ResponseEntity.ok(Map.of("url", url));
-        } catch (StripeException e) {
-            return ResponseEntity.status(500).body("Erro ao criar sessão: " + e.getMessage());
-        }
     }
 
     @PostMapping("/webhook")
@@ -41,7 +38,7 @@ public class StripeController {
             webhookService.handleEvent(payload, sigHeader);
             return ResponseEntity.ok().build();
         } catch (SignatureVerificationException e) {
-            return ResponseEntity.status(400).body("Webhook inválido");
+            throw new BusinessException("Assinatura Webhook inválido");
         }
     }
 }

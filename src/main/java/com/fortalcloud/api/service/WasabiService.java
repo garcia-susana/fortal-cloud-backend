@@ -1,5 +1,7 @@
 package com.fortalcloud.api.service;
 
+import com.fortalcloud.api.exception.BusinessException;
+import com.fortalcloud.api.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -38,52 +40,89 @@ public class WasabiService {
     }
 
     public List<String> listBuckets() {
-        return s3Client.listBuckets()
-                .buckets()
-                .stream()
-                .map(b -> b.name())
-                .toList();
+        try {
+            return s3Client.listBuckets()
+                    .buckets()
+                    .stream()
+                    .map(b -> b.name())
+                    .toList();
+        } catch (S3Exception ex) {
+            throw new BusinessException("Erro ao listar buckets: " + ex.awsErrorDetails().errorMessage());
+        }
     }
 
     public List<String> listFiles(String userId) {
-        ListObjectsV2Request request = ListObjectsV2Request.builder()
-                .bucket(bucket)
-                .prefix(userId + "/")
-                .build();
+        try {
+            ListObjectsV2Request request = ListObjectsV2Request.builder()
+                    .bucket(bucket)
+                    .prefix(userId + "/")
+                    .build();
 
-        return s3Client.listObjectsV2(request)
-                .contents()
-                .stream()
-                .map(S3Object::key)
-                .toList();
+            return s3Client.listObjectsV2(request)
+                    .contents()
+                    .stream()
+                    .map(S3Object::key)
+                    .toList();
+        } catch (S3Exception ex) {
+            throw new BusinessException("Erro ao listar arquivos do usuário.");
+        }
     }
 
     public URL generateUploadUrl(String userId, String fileName) {
-        S3Presigner presigner = buildPresigner();
-        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(15))
-                .putObjectRequest(r -> r
-                        .bucket(bucket)
-                        .key(userId + "/" + fileName))
-                .build();
-        return presigner.presignPutObject(presignRequest).url();
+        if (fileName == null || fileName.isBlank()) {
+            throw new BusinessException("Nome do arquivo não pode ser vazio.");
+        }
+        try {
+            S3Presigner presigner = buildPresigner();
+            PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+                    .signatureDuration(Duration.ofMinutes(15))
+                    .putObjectRequest(r -> r
+                            .bucket(bucket)
+                            .key(userId + "/" + fileName))
+                    .build();
+            return presigner.presignPutObject(presignRequest).url();
+        } catch (S3Exception ex) {
+            throw new BusinessException("Erro ao gerar URL de upload.");
+        }
     }
 
     public URL generateDownloadUrl(String userId, String fileName) {
-        S3Presigner presigner = buildPresigner();
-        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(15))
-                .getObjectRequest(r -> r
-                        .bucket(bucket)
-                        .key(userId + "/" + fileName))
-                .build();
-        return presigner.presignGetObject(presignRequest).url();
+        if (fileName == null || fileName.isBlank()) {
+            throw new BusinessException("Nome do arquivo não pode ser vazio.");
+        }
+        try {
+            S3Presigner presigner = buildPresigner();
+            GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                    .signatureDuration(Duration.ofMinutes(15))
+                    .getObjectRequest(r -> r
+                            .bucket(bucket)
+                            .key(userId + "/" + fileName))
+                    .build();
+            return presigner.presignGetObject(presignRequest).url();
+        } catch (S3Exception ex) {
+            throw new BusinessException("Erro ao gerar URL de download.");
+        }
     }
 
     public void deleteFile(String userId, String fileName) {
-        s3Client.deleteObject(r -> r
-                .bucket(bucket)
-                .key(userId + "/" + fileName));
+        // Verifica se o arquivo existe antes de tentar deletar
+        try {
+            s3Client.headObject(r -> r
+                    .bucket(bucket)
+                    .key(userId + "/" + fileName));
+        } catch (NoSuchKeyException ex) {
+            throw new ResourceNotFoundException("Arquivo não encontrado: " + fileName);
+        } catch (S3Exception ex) {
+            throw new BusinessException("Erro ao verificar arquivo antes de deletar.");
+        }
+
+        try {
+            s3Client.deleteObject(r -> r
+                    .bucket(bucket)
+                    .key(userId + "/" + fileName));
+        } catch (S3Exception ex) {
+            throw new BusinessException("Erro ao deletar arquivo: " + fileName);
+        }
     }
 
     private S3Presigner buildPresigner() {

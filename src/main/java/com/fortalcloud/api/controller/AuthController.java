@@ -1,9 +1,11 @@
 package com.fortalcloud.api.controller;
 
 import com.fortalcloud.api.config.JwtService;
+import com.fortalcloud.api.exception.BusinessException;
 import com.fortalcloud.api.model.User;
 import com.fortalcloud.api.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,7 +36,7 @@ public class AuthController {
         String password = body.get("password");
 
         if (userRepository.existsByEmail(email)) {
-            return ResponseEntity.badRequest().body("Email já cadastrado");
+            throw new BusinessException("Email já cadastrado.");
         }
 
         User user = new User();
@@ -53,12 +55,12 @@ public class AuthController {
 
         Optional<User> userOpt = userRepository.findByEmail(email);
         if (userOpt.isEmpty()) {
-            return ResponseEntity.status(401).body("Credenciais inválidas");
+            throw new BadCredentialsException("Email ou senha inválidos.");
         }
 
         User user = userOpt.get();
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            return ResponseEntity.status(401).body("Credenciais inválidas");
+            throw new BadCredentialsException("Email ou senha inválidos.");
         }
 
         String token = jwtService.generateToken(email);

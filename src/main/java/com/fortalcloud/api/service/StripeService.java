@@ -1,5 +1,6 @@
 package com.fortalcloud.api.service;
 
+import com.fortalcloud.api.exception.BusinessException;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
@@ -22,21 +23,27 @@ public class StripeService {
     @Value("${stripe.cancel-url}")
     private String cancelUrl;
 
-    public String createCheckoutSession(String userEmail) throws StripeException {
+    public String createCheckoutSession(String userEmail){
         Stripe.apiKey = secretKey;
 
-        SessionCreateParams params = SessionCreateParams.builder()
-                .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
-                .setCustomerEmail(userEmail)
-                .setSuccessUrl(successUrl + "?session_id={CHECKOUT_SESSION_ID}")
-                .setCancelUrl(cancelUrl)
-                .addLineItem(SessionCreateParams.LineItem.builder()
-                        .setPrice(priceId)
-                        .setQuantity(1L)
-                        .build())
-                .build();
+        try {
+            SessionCreateParams params = SessionCreateParams.builder()
+                    .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
+                    .setCustomerEmail(userEmail)
+                    .setSuccessUrl(successUrl + "?session_id={CHECKOUT_SESSION_ID}")
+                    .setCancelUrl(cancelUrl)
+                    .addLineItem(SessionCreateParams.LineItem.builder()
+                            .setPrice(priceId)
+                            .setQuantity(1L)
+                            .build())
+                    .build();
 
-        Session session = Session.create(params);
-        return session.getUrl();
+            Session session = Session.create(params);
+            return session.getUrl();
+
+        } catch (StripeException ex) {
+            throw new BusinessException("Erro ao criar sessão de pagamento: " + ex.getMessage());
+        }
+
     }
 }
