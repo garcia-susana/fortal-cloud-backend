@@ -4,6 +4,8 @@ import com.fortalcloud.api.config.JwtService;
 import com.fortalcloud.api.exception.BusinessException;
 import com.fortalcloud.api.model.User;
 import com.fortalcloud.api.repository.UserRepository;
+import com.fortalcloud.api.service.EmailService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,20 +17,13 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-
-
-    public AuthController(UserRepository userRepository,
-                          PasswordEncoder passwordEncoder,
-                          JwtService jwtService) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-    }
+    private final EmailService emailService;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
@@ -43,6 +38,10 @@ public class AuthController {
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(password));
         userRepository.save(user);
+
+        // Envia emails
+        emailService.sendWelcomeEmail(email);
+        emailService.sendNewUserNotification(email);
 
         String token = jwtService.generateToken(email);
         return ResponseEntity.ok(Map.of("token", token));
