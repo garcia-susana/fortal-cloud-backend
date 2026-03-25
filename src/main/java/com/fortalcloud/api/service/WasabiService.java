@@ -57,9 +57,7 @@ public class WasabiService {
         try {
             ListObjectsV2Request request = ListObjectsV2Request.builder()
                     .bucket(bucket)
-                    .prefix(userId + "/")
                     .build();
-
             return s3Client.listObjectsV2(request)
                     .contents()
                     .stream()
@@ -80,7 +78,7 @@ public class WasabiService {
                     .signatureDuration(Duration.ofMinutes(15))
                     .putObjectRequest(r -> r
                             .bucket(bucket)
-                            .key(userId + "/" + fileName))
+                            .key( fileName))
                     .build();
             return presigner.presignPutObject(presignRequest).url();
         } catch (S3Exception ex) {
@@ -169,5 +167,25 @@ public class WasabiService {
         if (bytes < 1024 * 1024) return String.format("%.1f KB", bytes / 1024.0);
         if (bytes < 1024 * 1024 * 1024) return String.format("%.1f MB", bytes / (1024.0 * 1024));
         return String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024));
+    }
+
+    public void createUserBucket(String userId) {
+        String bucketName = buildBucketName(userId);
+        try {
+            s3Client.createBucket(r -> r.bucket(bucketName));
+        } catch (BucketAlreadyExistsException | BucketAlreadyOwnedByYouException e) {
+            // bucket já existe, ignora
+        } catch (S3Exception ex) {
+            throw new BusinessException("Erro ao criar bucket para o usuário.");
+        }
+    }
+
+    private String buildBucketName(String userId) {
+        // userId é o email, ex: teste@teste.com → fortal-cloud-teste-teste-com
+        return "fortal-cloud-" + userId
+                .toLowerCase()
+                .replaceAll("[^a-z0-9]", "-")
+                .replaceAll("-+", "-")
+                .replaceAll("^-|-$", "");
     }
 }

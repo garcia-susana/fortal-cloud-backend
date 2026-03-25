@@ -5,6 +5,7 @@ import com.fortalcloud.api.exception.BusinessException;
 import com.fortalcloud.api.model.User;
 import com.fortalcloud.api.repository.UserRepository;
 import com.fortalcloud.api.service.EmailService;
+import com.fortalcloud.api.service.WasabiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -24,6 +25,7 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final EmailService emailService;
+    private final WasabiService wasabiService;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
@@ -40,6 +42,7 @@ public class AuthController {
         userRepository.save(user);
 
         // Envia emails
+        wasabiService.createUserBucket(email);
         emailService.sendWelcomeEmail(email);
         emailService.sendNewUserNotification(email);
 
