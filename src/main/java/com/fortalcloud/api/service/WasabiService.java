@@ -108,8 +108,8 @@ public class WasabiService {
         // Verifica se o arquivo existe antes de tentar deletar
         try {
             s3Client.headObject(r -> r
-                    .bucket(bucket)
-                    .key(userId + "/" + fileName));
+                    .bucket(buildBucketName(userId))
+                    .key(fileName));
         } catch (NoSuchKeyException ex) {
             throw new ResourceNotFoundException("Arquivo não encontrado: " + fileName);
         } catch (S3Exception ex) {
@@ -119,7 +119,7 @@ public class WasabiService {
         try {
             s3Client.deleteObject(r -> r
                     .bucket(buildBucketName(userId))
-                    .key(userId + "/" + fileName));
+                    .key(fileName));
         } catch (S3Exception ex) {
             throw new BusinessException("Erro ao deletar arquivo: " + fileName);
         }
