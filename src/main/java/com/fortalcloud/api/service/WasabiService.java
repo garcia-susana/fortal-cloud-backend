@@ -56,7 +56,7 @@ public class WasabiService {
     public List<String> listFiles(String userId) {
         try {
             ListObjectsV2Request request = ListObjectsV2Request.builder()
-                    .bucket(bucket)
+                    .bucket(buildBucketName(userId))
                     .build();
             return s3Client.listObjectsV2(request)
                     .contents()
@@ -77,7 +77,7 @@ public class WasabiService {
             PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
                     .signatureDuration(Duration.ofMinutes(15))
                     .putObjectRequest(r -> r
-                            .bucket(bucket)
+                            .bucket(buildBucketName(userId))
                             .key( fileName))
                     .build();
             return presigner.presignPutObject(presignRequest).url();
@@ -95,7 +95,7 @@ public class WasabiService {
             GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
                     .signatureDuration(Duration.ofMinutes(15))
                     .getObjectRequest(r -> r
-                            .bucket(bucket)
+                            .bucket(buildBucketName(userId))
                             .key(userId + "/" + fileName))
                     .build();
             return presigner.presignGetObject(presignRequest).url();
@@ -118,7 +118,7 @@ public class WasabiService {
 
         try {
             s3Client.deleteObject(r -> r
-                    .bucket(bucket)
+                    .bucket(buildBucketName(userId))
                     .key(userId + "/" + fileName));
         } catch (S3Exception ex) {
             throw new BusinessException("Erro ao deletar arquivo: " + fileName);
@@ -137,7 +137,7 @@ public class WasabiService {
     public Map<String, Object> getStorageQuota(String userId){
         try{
             ListObjectsV2Request request = ListObjectsV2Request.builder()
-                    .bucket(bucket)
+                    .bucket(buildBucketName(userId))
                     .prefix(userId + "/")
                     .build();
 
