@@ -1,6 +1,9 @@
 package com.fortalcloud.api.controller;
 
+import com.fortalcloud.api.exception.SubscriptionRequiredException;
+import com.fortalcloud.api.repository.UserRepository;
 import com.fortalcloud.api.service.WasabiService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -10,17 +13,24 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/wasabi")
+@RequiredArgsConstructor
 public class WasabiController {
 
     private final WasabiService wasabiService;
+    private final UserRepository userRepository;
 
-    public WasabiController(WasabiService wasabiService) {
-        this.wasabiService = wasabiService;
+    private void checkSubscription(String email) {
+        userRepository.findByEmail(email).ifPresent(user -> {
+            if (!"ACTIVE".equals(user.getSubscriptionStatus())) {
+                throw new SubscriptionRequiredException();
+            }
+        });
     }
 
     @GetMapping("/files")
     public ResponseEntity<List<String>> listFiles(Authentication authentication) {
         String userId = authentication.getName();
+        checkSubscription(userId);
         return ResponseEntity.ok(wasabiService.listFiles(userId));
     }
 
@@ -29,6 +39,7 @@ public class WasabiController {
             @PathVariable String fileName,
             Authentication authentication) {
         String userId = authentication.getName();
+        checkSubscription(userId);
         String url = wasabiService.generateUploadUrl(userId, fileName).toString();
         return ResponseEntity.ok(Map.of("url", url));
     }
@@ -38,6 +49,7 @@ public class WasabiController {
             @PathVariable String fileName,
             Authentication authentication) {
         String userId = authentication.getName();
+        checkSubscription(userId);
         String url = wasabiService.generateDownloadUrl(userId, fileName).toString();
         return ResponseEntity.ok(Map.of("url", url));
     }
@@ -47,6 +59,7 @@ public class WasabiController {
             @PathVariable String fileName,
             Authentication authentication) {
         String userId = authentication.getName();
+        checkSubscription(userId);
         wasabiService.deleteFile(userId, fileName);
         return ResponseEntity.noContent().build();
     }
@@ -54,6 +67,7 @@ public class WasabiController {
     @GetMapping("/quota")
     public ResponseEntity<Map<String, Object>> getQuota(Authentication authentication) {
         String userId = authentication.getName();
+        checkSubscription(userId);
         return ResponseEntity.ok(wasabiService.getStorageQuota(userId));
     }
 }
