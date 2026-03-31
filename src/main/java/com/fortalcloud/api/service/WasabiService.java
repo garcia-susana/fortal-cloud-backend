@@ -18,6 +18,9 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 
 @Service
@@ -36,6 +39,8 @@ public class WasabiService {
 
     @Value("${wasabi.endpoint}")
     private String endpoint;
+
+    private static final Logger log = LoggerFactory.getLogger(WasabiService.class);
 
     public WasabiService(S3Client s3Client) {
         this.s3Client = s3Client;
@@ -123,6 +128,38 @@ public class WasabiService {
         } catch (S3Exception ex) {
             throw new BusinessException("Erro ao deletar arquivo: " + fileName);
         }
+    }
+
+    public void deleteBucket(String email){
+        String bucketName = buildBucketName(email);
+
+        ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
+                .bucket(bucketName)
+                .build();
+
+        ListObjectsV2Response listResponse;
+        do {
+            listResponse = s3Client.listObjectsV2(listRequest);
+            List<ObjectIdentifier> objetos = listResponse.contents().stream()
+                    .map(obj -> ObjectIdentifier.builder().key(obj.key()).build())
+                    .toList();
+
+            if (!objetos.isEmpty()) {
+                DeleteObjectsRequest deleteRequest = DeleteObjectsRequest.builder()
+                        .bucket(bucketName)
+                        .delete(Delete.builder().objects(objetos).build())
+                        .build();
+                s3Client.deleteObjects(deleteRequest);
+            }
+
+            listRequest = listRequest.toBuilder()
+                    .continuationToken(listResponse.nextContinuationToken())
+                    .build();
+        } while (listResponse.isTruncated());
+
+        // 2. Deletar o bucket
+        s3Client.deleteBucket(DeleteBucketRequest.builder().bucket(bucketName).build());
+        log.info("Bucket deletado: {}", bucketName);
     }
 
     private S3Presigner buildPresigner() {
