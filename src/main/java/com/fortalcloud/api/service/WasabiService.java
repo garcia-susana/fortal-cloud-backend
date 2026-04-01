@@ -227,4 +227,10 @@ public class WasabiService {
                 .replaceAll("-+", "-")
                 .replaceAll("^-|-$", "");
     }
+
+    public void validateFileSize(long fileSize) {
+        if (fileSize > MAX_FILE_SIZE) {
+            throw new BusinessException("Arquivo excede o limite máximo de 5TB.");
+        }
+    }
 }
