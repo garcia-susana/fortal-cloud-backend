@@ -37,6 +37,7 @@ public class WasabiController {
     @GetMapping("/upload-url/{fileName}")
     public ResponseEntity<Map<String, String>> getUploadUrl(
             @PathVariable String fileName,
+            @RequestParam(required = false, defaultValue = "0") long fileSize,
             Authentication authentication) {
         String userId = authentication.getName();
         checkSubscription(userId);
@@ -69,5 +70,17 @@ public class WasabiController {
         String userId = authentication.getName();
         checkSubscription(userId);
         return ResponseEntity.ok(wasabiService.getStorageQuota(userId));
+    }
+
+    @GetMapping("/upload-url/{fileName}")
+    public ResponseEntity<Map<String, String>> getUploadUrl(
+            @PathVariable String fileName,
+            @RequestParam(required = false, defaultValue = "0") long fileSize,
+            Authentication authentication) {
+        String userId = authentication.getName();
+        checkSubscription(userId);
+        wasabiService.validateFileSize(fileSize);
+        String url = wasabiService.generateUploadUrl(userId, fileName).toString();
+        return ResponseEntity.ok(Map.of("url", url));
     }
 }

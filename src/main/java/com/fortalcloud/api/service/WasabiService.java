@@ -42,6 +42,8 @@ public class WasabiService {
 
     private static final Logger log = LoggerFactory.getLogger(WasabiService.class);
 
+    private static final long MAX_FILE_SIZE = 5L * 1024 * 1024 * 1024 * 1024; // 5TB
+
     public WasabiService(S3Client s3Client) {
         this.s3Client = s3Client;
     }
