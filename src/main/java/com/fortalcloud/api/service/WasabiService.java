@@ -103,7 +103,8 @@ public class WasabiService {
                     .signatureDuration(Duration.ofMinutes(15))
                     .getObjectRequest(r -> r
                             .bucket(buildBucketName(userId))
-                            .key(userId + "/" + fileName))
+                            .key(fileName)
+                            .responseContentDisposition("attachment; filename=\"" + fileName + "\""))
                     .build();
             return presigner.presignGetObject(presignRequest).url();
         } catch (S3Exception ex) {
