@@ -1,4 +1,4 @@
-﻿package com.fortalcloud.api.controller;
+package com.fortalcloud.api.controller;
 
 import com.fortalcloud.api.config.JwtService;
 import com.fortalcloud.api.exception.BusinessException;

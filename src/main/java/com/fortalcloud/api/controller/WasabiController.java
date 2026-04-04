@@ -4,7 +4,6 @@ import com.fortalcloud.api.exception.BusinessException;
 import com.fortalcloud.api.exception.SubscriptionRequiredException;
 import com.fortalcloud.api.repository.UserRepository;
 import com.fortalcloud.api.service.WasabiService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -13,11 +12,15 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/wasabi")
-@RequiredArgsConstructor
 public class WasabiController {
 
     private final WasabiService wasabiService;
     private final UserRepository userRepository;
+
+    public WasabiController(WasabiService wasabiService, UserRepository userRepository) {
+    this.wasabiService = wasabiService;
+    this.userRepository = userRepository;
+}
 
     private void checkSubscription(String email) {
         userRepository.findByEmail(email).ifPresent(user -> {
