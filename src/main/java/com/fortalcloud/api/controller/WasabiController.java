@@ -1,5 +1,6 @@
 package com.fortalcloud.api.controller;
 
+import com.fortalcloud.api.exception.BusinessException;
 import com.fortalcloud.api.exception.SubscriptionRequiredException;
 import com.fortalcloud.api.repository.UserRepository;
 import com.fortalcloud.api.service.WasabiService;
@@ -71,5 +72,22 @@ public class WasabiController {
         String userId = authentication.getName();
         checkSubscription(userId);
         return ResponseEntity.ok(wasabiService.getStorageQuota(userId));
+    }
+
+    @GetMapping("/credentials")
+    public ResponseEntity<Map<String, String>> getCredentials(Authentication authentication) {
+        String email = authentication.getName();
+        checkSubscription(email);
+        return userRepository.findByEmail(email)
+                .map(user -> ResponseEntity.ok(Map.of(
+                        "wasabiUsername", user.getWasabiUsername() != null ? user.getWasabiUsername() : "",
+                        "wasabiAccessKey", user.getWasabiAccessKey() != null ? user.getWasabiAccessKey() : "",
+                        "wasabiSecretKey", user.getWasabiSecretKey() != null ? user.getWasabiSecretKey() : "",
+                        "bucketName",
+                        "fortal-cloud-" + email.toLowerCase().replaceAll("[^a-z0-9]", "-").replaceAll("-+", "-")
+                                .replaceAll("^-|-$", ""),
+                        "endpoint", "s3.wasabisys.com",
+                        "region", "us-east-1")))
+                .orElseThrow(() -> new BusinessException("Usuário não encontrado."));
     }
 }

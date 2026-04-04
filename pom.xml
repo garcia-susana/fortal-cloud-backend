@@ -30,6 +30,12 @@
 		<java.version>21</java.version>
 	</properties>
 	<dependencies>
+	<!-- AWS IAM SDK - para criar sub-users no Wasabi -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>iam</artifactId>
+            <version>2.25.0</version>
+        </dependency>
         <dependency>
             <groupId>com.resend</groupId>
             <artifactId>resend-java</artifactId>

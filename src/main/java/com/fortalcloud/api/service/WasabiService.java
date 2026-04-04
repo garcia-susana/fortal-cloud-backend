@@ -1,5 +1,7 @@
 package com.fortalcloud.api.service;
 
+import software.amazon.awssdk.services.iam.IamClient;
+import software.amazon.awssdk.services.iam.model.*;
 import com.fortalcloud.api.exception.BusinessException;
 import com.fortalcloud.api.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,8 +22,6 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-
 
 @Service
 public class WasabiService {
@@ -85,7 +85,7 @@ public class WasabiService {
                     .signatureDuration(Duration.ofMinutes(15))
                     .putObjectRequest(r -> r
                             .bucket(buildBucketName(userId))
-                            .key( fileName))
+                            .key(fileName))
                     .build();
             return presigner.presignPutObject(presignRequest).url();
         } catch (S3Exception ex) {
@@ -133,7 +133,7 @@ public class WasabiService {
         }
     }
 
-    public void deleteBucket(String email){
+    public void deleteBucket(String email) {
         String bucketName = buildBucketName(email);
 
         ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
@@ -174,8 +174,8 @@ public class WasabiService {
                 .build();
     }
 
-    public Map<String, Object> getStorageQuota(String userId){
-        try{
+    public Map<String, Object> getStorageQuota(String userId) {
+        try {
             ListObjectsV2Request request = ListObjectsV2Request.builder()
                     .bucket(buildBucketName(userId))
                     .prefix(userId + "/")
@@ -195,17 +195,19 @@ public class WasabiService {
                     "usedFormatted", formatBytes(usedBytes),
                     "totalBytes", totalBytes,
                     "totalFormatted", "1 TB",
-                    "percentUsed", Math.round(percentUsed * 10000.0) / 10000.0
-            );
+                    "percentUsed", Math.round(percentUsed * 10000.0) / 10000.0);
         } catch (S3Exception ex) {
             throw new BusinessException("Erro ao calcular quota de armazenamento.");
         }
     }
 
     private String formatBytes(long bytes) {
-        if (bytes < 1024) return bytes + " B";
-        if (bytes < 1024 * 1024) return String.format("%.1f KB", bytes / 1024.0);
-        if (bytes < 1024 * 1024 * 1024) return String.format("%.1f MB", bytes / (1024.0 * 1024));
+        if (bytes < 1024)
+            return bytes + " B";
+        if (bytes < 1024 * 1024)
+            return String.format("%.1f KB", bytes / 1024.0);
+        if (bytes < 1024 * 1024 * 1024)
+            return String.format("%.1f MB", bytes / (1024.0 * 1024));
         return String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024));
     }
 
@@ -218,6 +220,67 @@ public class WasabiService {
         } catch (S3Exception ex) {
             throw new BusinessException("Erro ao criar bucket para o usuário.");
         }
+    }
+
+    public Map<String, String> createIamUser(String email) {
+        String username = "fc-" + email
+                .toLowerCase()
+                .replaceAll("[^a-z0-9]", "-")
+                .replaceAll("-+", "-")
+                .replaceAll("^-|-$", "");
+
+        String bucketName = buildBucketName(email);
+
+        IamClient iam = IamClient.builder()
+                .endpointOverride(URI.create("https://iam.wasabisys.com"))
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(accessKey, secretKey)))
+                .region(Region.US_EAST_1)
+                .build();
+
+        try {
+            iam.createUser(r -> r.userName(username));
+        } catch (EntityAlreadyExistsException e) {
+            log.warn("IAM user já existe: {}", username);
+        }
+
+        String policyDocument = """
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": ["s3:*"],
+                            "Resource": [
+                                "arn:aws:s3:::%s",
+                                "arn:aws:s3:::%s/*"
+                            ]
+                        }
+                    ]
+                }
+                """.formatted(bucketName, bucketName);
+
+        String policyName = "fc-policy-" + username;
+        try {
+            CreatePolicyResponse policyResponse = iam.createPolicy(r -> r
+                    .policyName(policyName)
+                    .policyDocument(policyDocument));
+
+            iam.attachUserPolicy(r -> r
+                    .userName(username)
+                    .policyArn(policyResponse.policy().arn()));
+        } catch (EntityAlreadyExistsException e) {
+            log.warn("Policy já existe: {}", policyName);
+        }
+
+        CreateAccessKeyResponse keyResponse = iam.createAccessKey(r -> r.userName(username));
+
+        log.info("IAM user criado para: {}", email);
+
+        return Map.of(
+                "wasabiUsername", username,
+                "wasabiAccessKey", keyResponse.accessKey().accessKeyId(),
+                "wasabiSecretKey", keyResponse.accessKey().secretAccessKey());
     }
 
     private String buildBucketName(String userId) {
