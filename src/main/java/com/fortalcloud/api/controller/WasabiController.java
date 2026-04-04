@@ -18,9 +18,9 @@ public class WasabiController {
     private final UserRepository userRepository;
 
     public WasabiController(WasabiService wasabiService, UserRepository userRepository) {
-    this.wasabiService = wasabiService;
-    this.userRepository = userRepository;
-}
+        this.wasabiService = wasabiService;
+        this.userRepository = userRepository;
+    }
 
     private void checkSubscription(String email) {
         userRepository.findByEmail(email).ifPresent(user -> {
@@ -98,9 +98,24 @@ public class WasabiController {
                         "wasabiUsername", user.getWasabiUsername() != null ? user.getWasabiUsername() : "",
                         "wasabiAccessKey", user.getWasabiAccessKey() != null ? user.getWasabiAccessKey() : "",
                         "wasabiSecretKey", user.getWasabiSecretKey() != null ? user.getWasabiSecretKey() : "",
-                        "bucketName", "fortal-cloud-" + email.toLowerCase().replaceAll("[^a-z0-9]", "-").replaceAll("-+", "-").replaceAll("^-|-$", ""),
+                        "bucketName",
+                        "fortal-cloud-" + email.toLowerCase().replaceAll("[^a-z0-9]", "-").replaceAll("-+", "-")
+                                .replaceAll("^-|-$", ""),
                         "endpoint", "s3.wasabisys.com",
                         "region", "us-east-1")))
                 .orElseThrow(() -> new BusinessException("Usuário não encontrado."));
+    }
+
+    @GetMapping("/share-url/{fileName}")
+    public ResponseEntity<Map<String, String>> getShareUrl(
+            @PathVariable String fileName,
+            @RequestParam(required = false, defaultValue = "24") int expiry,
+            Authentication authentication) {
+        String userId = authentication.getName();
+        checkSubscription(userId);
+        String url = wasabiService.generateShareUrl(userId, fileName, expiry);
+        return ResponseEntity.ok(Map.of(
+                "url", url,
+                "expiresIn", expiry + "h"));
     }
 }

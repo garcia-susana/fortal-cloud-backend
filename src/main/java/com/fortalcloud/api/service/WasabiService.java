@@ -113,6 +113,24 @@ public class WasabiService {
         }
     }
 
+    public String generateShareUrl(String userId, String fileName, int expiryHours) {
+        if (fileName == null || fileName.isBlank()) {
+            throw new BusinessException("Nome do arquivo não pode ser vazio.");
+        }
+        try {
+            S3Presigner presigner = buildPresigner();
+            GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                    .signatureDuration(Duration.ofHours(expiryHours))
+                    .getObjectRequest(r -> r
+                            .bucket(buildBucketName(userId))
+                            .key(fileName))
+                    .build();
+            return presigner.presignGetObject(presignRequest).url().toString();
+        } catch (S3Exception ex) {
+            throw new BusinessException("Erro ao gerar link de compartilhamento.");
+        }
+    }
+
     public void createFolder(String userId, String folderPath) {
         if (folderPath == null || folderPath.isBlank()) {
             throw new BusinessException("Nome da pasta não pode ser vazio.");
