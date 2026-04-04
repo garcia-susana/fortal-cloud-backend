@@ -9,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -29,21 +28,24 @@ public class WasabiController {
     }
 
     @GetMapping("/files")
-    public ResponseEntity<List<String>> listFiles(Authentication authentication) {
+    public ResponseEntity<Map<String, Object>> listFiles(
+            @RequestParam(required = false, defaultValue = "") String path,
+            Authentication authentication) {
         String userId = authentication.getName();
         checkSubscription(userId);
-        return ResponseEntity.ok(wasabiService.listFiles(userId));
+        return ResponseEntity.ok(wasabiService.listFiles(userId, path));
     }
 
     @GetMapping("/upload-url/{fileName}")
     public ResponseEntity<Map<String, String>> getUploadUrl(
             @PathVariable String fileName,
+            @RequestParam(required = false, defaultValue = "") String path,
             @RequestParam(required = false, defaultValue = "0") long fileSize,
             Authentication authentication) {
         String userId = authentication.getName();
         checkSubscription(userId);
         wasabiService.validateFileSize(fileSize);
-        String url = wasabiService.generateUploadUrl(userId, fileName).toString();
+        String url = wasabiService.generateUploadUrl(userId, fileName, path).toString();
         return ResponseEntity.ok(Map.of("url", url));
     }
 
@@ -67,6 +69,16 @@ public class WasabiController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/folders")
+    public ResponseEntity<Void> createFolder(
+            @RequestBody Map<String, String> body,
+            Authentication authentication) {
+        String userId = authentication.getName();
+        checkSubscription(userId);
+        wasabiService.createFolder(userId, body.get("path"));
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/quota")
     public ResponseEntity<Map<String, Object>> getQuota(Authentication authentication) {
         String userId = authentication.getName();
@@ -83,9 +95,7 @@ public class WasabiController {
                         "wasabiUsername", user.getWasabiUsername() != null ? user.getWasabiUsername() : "",
                         "wasabiAccessKey", user.getWasabiAccessKey() != null ? user.getWasabiAccessKey() : "",
                         "wasabiSecretKey", user.getWasabiSecretKey() != null ? user.getWasabiSecretKey() : "",
-                        "bucketName",
-                        "fortal-cloud-" + email.toLowerCase().replaceAll("[^a-z0-9]", "-").replaceAll("-+", "-")
-                                .replaceAll("^-|-$", ""),
+                        "bucketName", "fortal-cloud-" + email.toLowerCase().replaceAll("[^a-z0-9]", "-").replaceAll("-+", "-").replaceAll("^-|-$", ""),
                         "endpoint", "s3.wasabisys.com",
                         "region", "us-east-1")))
                 .orElseThrow(() -> new BusinessException("Usuário não encontrado."));

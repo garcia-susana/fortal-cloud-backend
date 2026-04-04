@@ -60,36 +60,75 @@ public class WasabiService {
         }
     }
 
-    public List<String> listFiles(String userId) {
+    public Map<String, Object> listFiles(String userId, String path) {
         try {
+            String prefix = (path == null || path.isBlank()) ? "" : path.endsWith("/") ? path : path + "/";
+
             ListObjectsV2Request request = ListObjectsV2Request.builder()
                     .bucket(buildBucketName(userId))
+                    .prefix(prefix)
+                    .delimiter("/")
                     .build();
-            return s3Client.listObjectsV2(request)
-                    .contents()
-                    .stream()
-                    .map(S3Object::key)
+
+            ListObjectsV2Response response = s3Client.listObjectsV2(request);
+
+            List<String> folders = response.commonPrefixes().stream()
+                    .map(CommonPrefix::prefix)
                     .toList();
+
+            List<Map<String, Object>> files = response.contents().stream()
+                    .filter(obj -> !obj.key().equals(prefix))
+                    .map(obj -> Map.<String, Object>of(
+                            "key", obj.key(),
+                            "name", obj.key().substring(prefix.length()),
+                            "size", obj.size(),
+                            "sizeFormatted", formatBytes(obj.size()),
+                            "lastModified", obj.lastModified().toString()))
+                    .toList();
+
+            return Map.of("folders", folders, "files", files, "currentPath", prefix);
         } catch (S3Exception ex) {
             throw new BusinessException("Erro ao listar arquivos do usuário.");
         }
     }
 
-    public URL generateUploadUrl(String userId, String fileName) {
+    public URL generateUploadUrl(String userId, String fileName, String path) {
         if (fileName == null || fileName.isBlank()) {
             throw new BusinessException("Nome do arquivo não pode ser vazio.");
         }
         try {
+            String prefix = (path == null || path.isBlank()) ? "" : path.endsWith("/") ? path : path + "/";
+            String key = prefix + fileName;
+
             S3Presigner presigner = buildPresigner();
             PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
                     .signatureDuration(Duration.ofMinutes(15))
                     .putObjectRequest(r -> r
                             .bucket(buildBucketName(userId))
-                            .key(fileName))
+                            .key(key))
                     .build();
             return presigner.presignPutObject(presignRequest).url();
         } catch (S3Exception ex) {
             throw new BusinessException("Erro ao gerar URL de upload.");
+        }
+    }
+
+    public void createFolder(String userId, String folderPath) {
+        if (folderPath == null || folderPath.isBlank()) {
+            throw new BusinessException("Nome da pasta não pode ser vazio.");
+        }
+        String key = folderPath.endsWith("/") ? folderPath : folderPath + "/";
+        try {
+            s3Client.putObject(
+                    PutObjectRequest.builder()
+                            .bucket(buildBucketName(userId))
+                            .key(key)
+                            .contentLength(0L)
+                            .build(),
+                    software.amazon.awssdk.core.sync.RequestBody.empty());
+            log.info("Pasta criada: {}/{}", userId, key);
+        } catch (S3Exception ex) {
+            throw new BusinessException("Erro ao criar pasta.");
         }
     }
 
