@@ -33,6 +33,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/test/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/stripe/webhook").permitAll()
+                        .requestMatchers("/api/contact").permitAll()
                         .anyRequest().authenticated()
                 )
                 // Vamos tentar pular o filtro JWT apenas para a rota de teste se possível,
@@ -60,7 +61,7 @@ public class SecurityConfig {
                                 "http://191.101.18.65/",
                                 "https://fortal-cloud.com.br",      // domínio de produção
                                 "https://www.fortal-cloud.com.br",
-                                "https://6cc407b4-0343-48be-8a6e-d010262677f8.app-preview.com"   // com www também
+                                "https://6cc407b4-0343-48be-8a6e-d010262677f8.app-preview.com"// com www também
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")

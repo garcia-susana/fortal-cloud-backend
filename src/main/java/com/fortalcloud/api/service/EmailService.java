@@ -53,4 +53,27 @@ public class EmailService {
             System.out.println("Erro ao enviar notificação de novo usuário: " + e.getMessage());
         }
     }
+
+    public void sendContactEmail(String name, String email, String message) {
+        try {
+            Resend resend = new Resend(apiKey);
+            CreateEmailOptions contactEmail = CreateEmailOptions.builder()
+                    .from("Fortal-Cloud <noreply@fortal-cloud.com.br>")
+                    .to("sales@fortal-cloud.com.br")
+                    .subject("Novo contato via site: " + name)
+                    .html("""
+                    <h2>Novo contato pelo site</h2>
+                    <p><strong>Nome:</strong> %s</p>
+                    <p><strong>Email:</strong> %s</p>
+                    <p><strong>Mensagem:</strong></p>
+                    <p>%s</p>
+                    <br>
+                    <p>Fortal-Cloud</p>
+                """.formatted(name, email, message))
+                    .build();
+            resend.emails().send(contactEmail);
+        } catch (ResendException e) {
+            System.out.println("Erro ao enviar email de contato: " + e.getMessage());
+        }
+    }
 }
