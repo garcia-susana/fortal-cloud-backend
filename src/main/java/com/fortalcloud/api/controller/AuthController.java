@@ -8,13 +8,13 @@ import com.fortalcloud.api.service.EmailService;
 import com.fortalcloud.api.service.WasabiService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -40,14 +40,16 @@ public class AuthController {
     public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
         String email = body.get("email");
         String password = body.get("password");
+        String name = body.get("name");
         if (userRepository.existsByEmail(email)) {
             throw new BusinessException("Email ja cadastrado.");
         }
         User user = new User();
+        user.setName(name);
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(password));
         userRepository.save(user);
-        wasabiService.createUserBucket(email);
+        //wasabiService.createUserBucket(email);
         Map<String, String> iamCredentials = wasabiService.createIamUser(email);
         user.setWasabiUsername(iamCredentials.get("wasabiUsername"));
         user.setWasabiAccessKey(iamCredentials.get("wasabiAccessKey"));
@@ -55,8 +57,8 @@ public class AuthController {
         userRepository.save(user);
         emailService.sendWelcomeEmail(email);
         emailService.sendNewUserNotification(email);
-        String token = jwtService.generateToken(email);
-        return ResponseEntity.ok(Map.of("token", token));
+        String token = jwtService.generateToken(user);
+        return ResponseEntity.ok(Map.of("token", token, "name", user.getName(), "wasabiAccessKey", user.getWasabiAccessKey()));
     }
 
     @PostMapping("/login")
@@ -71,7 +73,14 @@ public class AuthController {
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new BadCredentialsException("Email ou senha invalidos.");
         }
-        String token = jwtService.generateToken(email);
-        return ResponseEntity.ok(Map.of("token", token));
+        String token = jwtService.generateToken(user);
+
+        Map<String, Object> response = new HashMap<>();
+
+        response.put("token", token);
+        response.put("name", user.getName() != null ? user.getName() : "Usuário");
+        response.put("wasabiAccessKey", user.getWasabiAccessKey() != null ? user.getWasabiAccessKey() : "");
+
+        return ResponseEntity.ok(response);
     }
 }
