@@ -8,6 +8,7 @@ import com.fortalcloud.api.service.EmailService;
 import com.fortalcloud.api.service.WasabiService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -72,5 +73,33 @@ public class AuthController {
         }
         String token = jwtService.generateToken(email);
         return ResponseEntity.ok(Map.of("token", token));
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> body, Authentication authentication) {
+        String email = authentication.getName();
+        String currentPassword = body.get("currentPassword");
+        String newPassword = body.get("newPassword");
+
+        if (currentPassword == null || newPassword == null ||
+                currentPassword.isBlank() || newPassword.isBlank()) {
+            throw new BusinessException("Todos os campos sao obrigatorios.");
+        }
+
+        if (newPassword.length() < 6) {
+            throw new BusinessException("A nova senha deve ter pelo menos 6 caracteres.");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException("Usuario nao encontrado."));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new BadCredentialsException("Senha atual incorreta.");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        return ResponseEntity.ok(Map.of("message", "Senha alterada com sucesso."));
     }
 }
