@@ -233,18 +233,23 @@ public class WasabiService {
 
     public Map<String, Object> getStorageQuota(String userId) {
         try {
-            ListObjectsV2Request request = ListObjectsV2Request.builder()
-                    .bucket(buildBucketName(userId))
-                    .prefix(userId + "/")
-                    .build();
+            long usedBytes = 0;
+            String continuationToken = null;
 
-            long usedBytes = s3Client.listObjectsV2(request)
-                    .contents()
-                    .stream()
-                    .mapToLong(S3Object::size)
-                    .sum();
+            do {
+                ListObjectsV2Request.Builder builder = ListObjectsV2Request.builder()
+                        .bucket(buildBucketName(userId));
+                if (continuationToken != null) {
+                    builder.continuationToken(continuationToken);
+                }
+                ListObjectsV2Response response = s3Client.listObjectsV2(builder.build());
+                usedBytes += response.contents().stream()
+                        .mapToLong(S3Object::size)
+                        .sum();
+                continuationToken = response.isTruncated() ? response.nextContinuationToken() : null;
+            } while (continuationToken != null);
 
-            long totalBytes = 1_099_511_627_776L; // 1 TB
+            long totalBytes = 1_099_511_627_776L;
             double percentUsed = (double) usedBytes / totalBytes * 100;
 
             return Map.of(
@@ -253,7 +258,10 @@ public class WasabiService {
                     "totalBytes", totalBytes,
                     "totalFormatted", "1 TB",
                     "percentUsed", Math.round(percentUsed * 10000.0) / 10000.0);
-        } catch (S3Exception ex) {
+
+        } catch (NoSuchBucketException ex) {          // ← adiciona esse
+            throw new BusinessException("Bucket do usuário não encontrado.");
+        } catch (S3Exception ex) {                    // ← esse já existe
             throw new BusinessException("Erro ao calcular quota de armazenamento.");
         }
     }

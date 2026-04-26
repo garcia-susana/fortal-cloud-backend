@@ -49,7 +49,7 @@ public class AuthController {
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(password));
         userRepository.save(user);
-        //wasabiService.createUserBucket(email);
+        wasabiService.createUserBucket(email);
         Map<String, String> iamCredentials = wasabiService.createIamUser(email);
         user.setWasabiUsername(iamCredentials.get("wasabiUsername"));
         user.setWasabiAccessKey(iamCredentials.get("wasabiAccessKey"));
