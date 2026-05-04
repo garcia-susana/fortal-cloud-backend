@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: fortal-cloud-api
+  datasource:
+    url: "jdbc:postgresql://localhost:5432/fortalcloud?sslmode=disable"
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+wasabi:
+  access-key: "DEV_ACCESS_KEY"
+  secret-key: "DEV_SECRET_KEY"
+  endpoint: "https://s3.us-east-1.wasabisys.com"
+  bucket: "fortal-cloud-dev"
+  region: "us-east-1"
+
+stripe:
+  secret-key: "sk_test_DEV"
+  price-id: "price_DEV"
+  success-url: "http://localhost:3000/success"
+  cancel-url: "http://localhost:3000"
+  webhook-secret: "whsec_DEV"
+
+resend:
+  api-key: "re_DEV"
+
+jwt:
+  secret: "dev-secret-key-change-in-production"
+  expiration: 86400000
+
+server:
+  port: 8080
