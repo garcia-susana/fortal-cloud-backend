@@ -24,8 +24,8 @@ jobs:
 
       - name: Setup SSH
         run: |
-            mkdir -p ~/.ssh
-              cat > ~/.ssh/deploy_key << 'EOF'
+          mkdir -p ~/.ssh
+          cat > ~/.ssh/deploy_key << 'EOF'
           ${{ secrets.SSH_PRIVATE_KEY }}
           EOF
           chmod 600 ~/.ssh/deploy_key
@@ -53,4 +53,3 @@ jobs:
       - name: Cleanup SSH key
         if: always()
         run: rm -f ~/.ssh/deploy_key
-        ###PUSH TESTE###
