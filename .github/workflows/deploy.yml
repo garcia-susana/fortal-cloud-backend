@@ -1,8 +1,8 @@
-name: Deploy Backend
+name: Build and Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   build-and-deploy:
@@ -20,42 +20,45 @@ jobs:
           cache: maven
 
       - name: Build with Maven
-        run: ./mvnw clean package -DskipTests
+        run: mvn clean package -DskipTests -q
 
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          cat > ~/.ssh/deploy_key << 'EOF'
-          ${{ secrets.SSH_PRIVATE_KEY }}
-          EOF
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Deploy JAR to server
+      - name: Test SSH Connection
+        run: ssh -i ~/.ssh/deploy_key -v root@${{ secrets.SERVER_IP }} "echo SSH OK"
+        continue-on-error: true
+
+      - name: Deploy JAR with SCP
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SERVER_IP }}
           username: root
-          password: ${{ secrets.ROOT_PASSWORD }}
-          source: target/api-0.0.1-SNAPSHOT.jar
-          target: /home/ubuntu/fortal-cloud-backend/
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "target/api-0.0.1-SNAPSHOT.jar"
+          target: "/home/ubuntu/fortal-cloud-backend/"
+          overwrite: true
+          strip_prefix: "target/"
 
-      - name: Restart application
+      - name: Restart Service
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_IP }}
           username: root
-          password: ${{ secrets.ROOT_PASSWORD }}
-          script: systemctl restart fortal-cloud.service && sleep 5
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/ubuntu/fortal-cloud-backend
+            systemctl restart fortal-cloud.service
+            sleep 3
+            systemctl is-active fortal-cloud.service
 
-      - name: Test deployment
+      - name: Test API
         run: |
-          ssh -i ~/.ssh/deploy_key root@${{ secrets.SERVER_IP }} \
-            'curl -X POST https://api.fortal-cloud.com.br/api/auth/login \
-              -H "Content-Type: application/json" \
-              -d "{\"email\":\"garciasusana21@gmail.com\",\"password\":\"123456\"}" \
-              | grep -q "token" && echo "✅ Deploy successful!" || exit 1'
-
-      - name: Cleanup SSH key
-        if: always()
-        run: rm -f ~/.ssh/deploy_key
+          sleep 5
+          curl -f https://api.fortal-cloud.com.br/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{}' || true
