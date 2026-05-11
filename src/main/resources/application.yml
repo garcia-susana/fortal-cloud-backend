@@ -16,10 +16,10 @@ spring:
         format_sql: true
 
 wasabi:
-  access-key: "DEV_ACCESS_KEY"
-  secret-key: "DEV_SECRET_KEY"
-  endpoint: "https://s3.us-east-1.wasabisys.com"
-  bucket: "fortal-cloud-dev"
+  access-key: ${WASABI_ACCESS_KEY}
+  secret-key: ${WASABI_SECRET_KEY}
+  bucket: ${WASABI_BUCKET}
+  endpoint: ${WASABI_ENDPOINT}
   region: "us-east-1"
 
 stripe:
