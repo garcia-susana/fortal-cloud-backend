@@ -3,8 +3,8 @@ spring:
     name: fortal-cloud-api
   datasource:
     url: "jdbc:postgresql://localhost:5432/fortalcloud?sslmode=disable"
-    username: postgres
-    password: password
+    username: neondb_owner
+    password: npg_FVACIJowZN50
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:

@@ -8,6 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -133,5 +136,26 @@ public class WasabiController {
             }
         });
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/usage-history")
+    public ResponseEntity<List<Map<String, Object>>> getUsageHistory(Authentication authentication){
+        String userId = authentication.getName();
+        checkSubscription(userId);
+
+        List<Map<String, Object>> history = new ArrayList<>();
+
+        LocalDate today = LocalDate.now();
+        for(int i = 6; i >= 0; i--){
+            LocalDate date = today.minusDays(i);
+            long usedBytes = (long) (Math.random() * 1_073_741_824);
+
+            history.add(Map.of(
+                    "date", date.toString(),
+                    "usedBytes", usedBytes,
+                    "usedGb", Math.round((double) usedBytes / (1024 * 1024 * 1024) * 100.0) / 100.0
+            ));
+        }
+        return ResponseEntity.ok(history);
     }
 }
