@@ -118,4 +118,20 @@ public class WasabiController {
                 "url", url,
                 "expiresIn", expiry + "h"));
     }
+
+    @PostMapping("/setup")
+    public ResponseEntity<Void> setupUserStorage(Authentication authentication) {
+        String userId = authentication.getName();
+        userRepository.findByEmail(userId).ifPresent(user -> {
+            if (user.getWasabiUsername() == null || user.getWasabiUsername().isBlank()) {
+                wasabiService.createUserBucket(userId);
+                Map<String, String> iamCredentials = wasabiService.createIamUser(userId);
+                user.setWasabiUsername(iamCredentials.get("wasabiUsername"));
+                user.setWasabiAccessKey(iamCredentials.get("wasabiAccessKey"));
+                user.setWasabiSecretKey(iamCredentials.get("wasabiSecretKey"));
+                userRepository.save(user);
+            }
+        });
+        return ResponseEntity.ok().build();
+    }
 }
