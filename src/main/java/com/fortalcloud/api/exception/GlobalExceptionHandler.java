@@ -59,6 +59,20 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Validation Error", msg);
     }
 
+    // --- Erros de infraestrutura (Wasabi, etc.) com mensagem legível ---
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiError> handleRuntime(RuntimeException ex) {
+        ex.printStackTrace();
+        String msg = ex.getMessage();
+        // Expõe a mensagem apenas se for nossa (começa com "Erro ao")
+        if (msg != null && msg.startsWith("Erro ao")) {
+            return build(HttpStatus.SERVICE_UNAVAILABLE, "Service Unavailable", msg);
+        }
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error",
+                "Ocorreu um erro inesperado. Tente novamente.");
+    }
+
     // --- Fallback genérico ---
 
     @ExceptionHandler(Exception.class)
