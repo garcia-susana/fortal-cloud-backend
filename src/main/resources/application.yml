@@ -23,14 +23,14 @@ wasabi:
   region: "us-east-1"
 
 stripe:
-  secret-key: "sk_test_DEV"
-  price-id: "price_DEV"
-  success-url: "http://localhost:3000/success"
-  cancel-url: "http://localhost:3000"
-  webhook-secret: "whsec_DEV"
+  secret-key: ${STRIPE_SECRET_KEY}
+  price-id: ${STRIPE_PRICE_ID}
+  success-url: ${STRIPE_SUCCESS_URL:https://fortal-cloud.com.br/dashboard}
+  cancel-url: ${STRIPE_CANCEL_URL:https://fortal-cloud.com.br/subscription}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET}
 
 resend:
-  api-key: "re_DEV"
+  api-key: ${RESEND_API_KEY:re_DEV}
 
 jwt:
   secret: "dev-secret-key-change-in-production"
