@@ -126,8 +126,8 @@ public class WasabiController {
     public ResponseEntity<Void> setupUserStorage(Authentication authentication) {
         String userId = authentication.getName();
         userRepository.findByEmail(userId).ifPresent(user -> {
+            wasabiService.createUserBucket(userId);
             if (user.getWasabiUsername() == null || user.getWasabiUsername().isBlank()) {
-                wasabiService.createUserBucket(userId);
                 Map<String, String> iamCredentials = wasabiService.createIamUser(userId);
                 user.setWasabiUsername(iamCredentials.get("wasabiUsername"));
                 user.setWasabiAccessKey(iamCredentials.get("wasabiAccessKey"));
