@@ -1,0 +1,21 @@
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/fortalcloud?sslmode=disable}
+    username: ${DB_USERNAME:fortal}
+    password: ${DB_PASSWORD:fortal}
+
+wasabi:
+  access-key: ${WASABI_ACCESS_KEY:fake}
+  secret-key: ${WASABI_SECRET_KEY:fake}
+  bucket: ${WASABI_BUCKET:fake-bucket}
+  endpoint: ${WASABI_ENDPOINT:https://s3.wasabisys.com}
+
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY:sk_test_your_test_key_here}
+  price-id: ${STRIPE_PRICE_ID:price_1TestYourPriceIdHere}
+  success-url: ${STRIPE_SUCCESS_URL:http://localhost:3000/dashboard}
+  cancel-url: ${STRIPE_CANCEL_URL:http://localhost:3000/subscription}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_your_webhook_secret_here}
