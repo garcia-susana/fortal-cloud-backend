@@ -75,7 +75,7 @@ public class WebhookService {
                     }
                 }
 
-                case "invoice.paid" -> {
+                case "invoice.paid", "invoice.payment_succeeded" -> {
                     String customerId = data.path("customer").asText(null);
                     if (customerId != null) {
                         userRepository.findByStripeCustomerId(customerId).ifPresent(user -> {
