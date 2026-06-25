@@ -18,10 +18,12 @@ public class WebhookService {
     private String webhookSecret;
 
     private final UserRepository userRepository;
+    private final WasabiService wasabiService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public WebhookService(UserRepository userRepository) {
+    public WebhookService(UserRepository userRepository, WasabiService wasabiService) {
         this.userRepository = userRepository;
+        this.wasabiService = wasabiService;
     }
 
     public void handleEvent(String payload, String sigHeader) throws SignatureVerificationException {
@@ -46,6 +48,7 @@ public class WebhookService {
                                 user.setStripeCustomerId(customerId);
                             }
                             userRepository.save(user);
+                            wasabiService.createUserBucket(email);
                             System.out.println("✅ Assinatura ativada para: " + email);
                         });
                     }
@@ -82,6 +85,7 @@ public class WebhookService {
                             user.setPaymentFailedAt(null);
                             user.setSubscriptionStatus("ACTIVE");
                             userRepository.save(user);
+                            wasabiService.createUserBucket(user.getEmail());
                             System.out.println("✅ Pagamento regularizado para: " + user.getEmail());
                         });
                     }
