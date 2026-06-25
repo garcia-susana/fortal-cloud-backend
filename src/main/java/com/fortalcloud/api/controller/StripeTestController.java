@@ -46,10 +46,14 @@ public class StripeTestController {
     @PostMapping("/activate")
     public ResponseEntity<?> testActivate(@RequestBody Map<String, String> body) {
         String email = body.get("email");
-        if (email == null || email.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Email é obrigatório"));
+        String password = body.get("password");
+        if (email == null || email.isBlank() || password == null || password.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Email e senha são obrigatórios"));
         }
         return userRepository.findByEmail(email).map(user -> {
+            if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+                return ResponseEntity.status(401).body(Map.of("error", "Senha incorreta"));
+            }
             user.setSubscriptionStatus("ACTIVE");
             user.setPaymentFailedAt(null);
             userRepository.save(user);
