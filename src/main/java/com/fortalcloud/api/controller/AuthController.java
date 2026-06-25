@@ -74,21 +74,18 @@ public class AuthController {
         try {
             wasabiService.createUserBucket(email);
         } catch (Exception ex) {
-            log.error("Failed to create Wasabi bucket for {}: {}", email, ex.getMessage(), ex);
-            throw new RuntimeException("Erro ao provisionar armazenamento. Tente novamente em instantes.");
+            log.warn("Wasabi bucket nao criado no cadastro de {}: {}", email, ex.getMessage());
         }
 
-        Map<String, String> iamCredentials;
         try {
-            iamCredentials = wasabiService.createIamUser(email);
+            Map<String, String> iamCredentials = wasabiService.createIamUser(email);
+            user.setWasabiUsername(iamCredentials.get("wasabiUsername"));
+            user.setWasabiAccessKey(iamCredentials.get("wasabiAccessKey"));
+            user.setWasabiSecretKey(iamCredentials.get("wasabiSecretKey"));
         } catch (Exception ex) {
-            log.error("Failed to create Wasabi IAM user for {}: {}", email, ex.getMessage(), ex);
-            throw new RuntimeException("Erro ao configurar credenciais de acesso. Tente novamente em instantes.");
+            log.warn("Wasabi IAM nao criado no cadastro de {}: {}", email, ex.getMessage());
         }
 
-        user.setWasabiUsername(iamCredentials.get("wasabiUsername"));
-        user.setWasabiAccessKey(iamCredentials.get("wasabiAccessKey"));
-        user.setWasabiSecretKey(iamCredentials.get("wasabiSecretKey"));
         userRepository.save(user);
 
         try {
