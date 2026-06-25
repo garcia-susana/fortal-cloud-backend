@@ -42,7 +42,7 @@ jobs:
           source: "target/api-0.0.1-SNAPSHOT.jar"
           target: "/home/ubuntu/fortal-cloud-backend/"
           overwrite: true
-          strip_prefix: "target/"
+          strip_components: 1
 
       - name: Restart Service
         uses: appleboy/ssh-action@master
